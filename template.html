@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width" />
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>CovidWawa</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha2/css/bootstrap.min.css" integrity="sha384-DhY6onE6f3zzKbjUPRc2hOzGAdEf4/Dz+WJwBvEYL/lkkIsI3ihufq9hk9K4lVoK" crossorigin="anonymous">
+        <style>
+            #table {
+                width: auto;
+            }
+            
+            #table tbody tr td:nth-child(2n) {
+                border-left: 1px solid;
+                border-left-color: inherit;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="chart"></div>
+        <div class="container">
+            <table id="table" class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Dzień</th>
+                        <th scope="col">Zakażonych</th>
+                        <th scope="col" class="text-muted">nowych</th>
+                        <th scope="col">Ozdrowieńców</th>
+                        <th scope="col" class="text-muted">nowych</th>
+                        <th scope="col">Zgonów</th>
+                        <th scope="col" class="text-muted">nowych</th>
+                        <th scope="col">W kwarantannie</th>
+                        <th scope="col" class="text-muted">nowych</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table_data|reverse %}
+                        <tr>
+                            <th scope="row">{{ row.day.strftime('%d.%m.%Y') }}</th>
+                            <td>{{ row.positive }}</td>
+                            <td>{{ '%+d' % row.daily.positive }}</td>
+                            <td>{{ row.recovered }}</td>
+                            <td>{{ '%+d' % row.daily.recovered }}</td>
+                            <td>{{ row.deaths }}</td>
+                            <td>{{ '%+d' % row.daily.deaths }}</td>
+                            <td>{{ row.quarantined }}</td>
+                            <td>{{ '%+d' % row.daily.quarantined }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <script type="text/javascript">
+            google.charts.load('current', {'packages': ['corechart'], 'language': 'pl'});
+
+            function draw() {
+                var data = new google.visualization.DataTable();
+                data.addColumn('date', 'Dzień');
+                data.addColumn('number', 'Zakażenia');
+                data.addColumn('number', 'Ozdrowienia');
+                data.addColumn('number', 'Zgony');
+
+                data.addRows({{chart_data}});
+
+                var options = {
+                    title: 'Warszawa: nowe zakażenia i ozdrowienia (średnia z poprzedzających 7 dni) oraz nowe zgony',
+                    width: '100%',
+                    height: 800,
+                    curveType: 'function',
+                    theme: 'material',
+                    series: {
+                        0: { color: 'red' },
+                        1: { color: 'green', lineWidth: 1 },
+                        2: { color: 'black', lineWidth: 1 }
+                    },
+                    vAxis: { minValue: 0, viewWindow: { min: 0 } },
+                    annotations: {
+                        textStyle: {
+                            fontSize: 18,
+                            bold: true,
+                            color: '#000',
+                            opacity: 1
+                        }
+                    }
+                };
+
+                var chart = new google.visualization.LineChart(document.getElementById('chart'));
+                chart.draw(data, options);
+
+                window.addEventListener('resize', debounce(function(){
+                    var chart = new google.visualization.LineChart(document.getElementById('chart'));
+                    chart.draw(data, options);
+                }));
+            }
+
+            var debounce = function (func, threshold, execAsap) {
+                var timeout;
+
+                return function debounced () {
+                    var obj = this, args = arguments;
+
+                    function delayed () {
+                        if (!execAsap)
+                            func.apply(obj, args);
+                        timeout = null;
+                    }
+
+                    if (timeout)
+                        clearTimeout(timeout);
+                    else if (execAsap)
+                        func.apply(obj, args);
+
+                    timeout = setTimeout(delayed, threshold || 100);
+                };
+            }
+
+            google.charts.setOnLoadCallback(draw);
+         </script>
+    </body>
+</html>
