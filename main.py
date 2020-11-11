@@ -79,6 +79,7 @@ def parse_data(since=None):
 
         quarantined, quarantined_daily = extract([r'kwarantanną domową / \(ostatnia doba\): (\d+) / \((\d+)\)',
                                                   r'kwarantanną domową na podstawie decyzji inspektora sanitarnego: (\d+)'])
+        isolated, isolated_daily = extract([r'izolacją domową / \(ostatnia doba\): (\d+) / \((\d+)\)'], default=0)
         positive, = extract([r'z wynikiem dodatnim / \(ostatnia doba\): (\d+) /',
                              r'wynikiem dodatnim: (\d+)'])
         deaths, = extract([r'zgonów związanych z COVID-19 / \(ostatnia doba\): (\d+) /',
@@ -90,13 +91,15 @@ def parse_data(since=None):
             'quarantined': quarantined,
             'positive': positive,
             'deaths': deaths,
-            'recovered': recovered
+            'recovered': recovered,
+            'isolated': isolated
         })
 
         if idx > 0:
             results[idx].update({
                 'daily': {
                     'quarantined': quarantined_daily,
+                    'isolated': isolated_daily,
                     'positive': positive - results[idx - 1]['positive'],
                     'deaths': deaths - results[idx - 1]['deaths'],
                     'recovered': recovered - results[idx - 1]['recovered']

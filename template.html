@@ -24,13 +24,15 @@
                     <tr>
                         <th scope="col">Dzień</th>
                         <th scope="col">Zakażonych</th>
-                        <th scope="col" class="text-muted">nowych</th>
+                        <th scope="col"><span class="text-muted">nowych</span></th>
                         <th scope="col">Ozdrowieńców</th>
-                        <th scope="col" class="text-muted">nowych</th>
+                        <th scope="col"><span class="text-muted">nowych</span></th>
                         <th scope="col">Zgonów</th>
-                        <th scope="col" class="text-muted">nowych</th>
+                        <th scope="col"><span class="text-muted">nowych</span></th>
                         <th scope="col">W kwarantannie</th>
-                        <th scope="col" class="text-muted">nowych</th>
+                        <th scope="col"><span class="text-muted">nowych</span></th>
+                        <th scope="col">W izolacji</th>
+                        <th scope="col"><span class="text-muted">nowych</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -45,6 +47,8 @@
                             <td>{{ '%+d' % row.daily.deaths }}</td>
                             <td>{{ row.quarantined }}</td>
                             <td>{{ '%+d' % row.daily.quarantined }}</td>
+                            <td>{{ row.isolated }}</td>
+                            <td>{{ '%+d' % row.daily.isolated }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -65,7 +69,7 @@
                 data.addRows({{chart_data}});
 
                 var options = {
-                    title: 'Warszawa: nowe zakażenia i ozdrowienia (średnia z poprzedzających 7 dni) oraz nowe zgony',
+                    title: 'Warszawa: nowe zakażenia i ozdrowienia (średnia krocząca z 7 dni) oraz nowe zgony',
                     width: '100%',
                     height: 800,
                     curveType: 'function',
