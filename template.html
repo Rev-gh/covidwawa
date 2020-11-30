@@ -25,13 +25,7 @@
                         <th scope="col">Dzień</th>
                         <th scope="col">Zakażonych</th>
                         <th scope="col"><span class="text-muted">nowych</span></th>
-                        <th scope="col">Ozdrowieńców</th>
-                        <th scope="col"><span class="text-muted">nowych</span></th>
                         <th scope="col">Zgonów</th>
-                        <th scope="col"><span class="text-muted">nowych</span></th>
-                        <th scope="col">W kwarantannie</th>
-                        <th scope="col"><span class="text-muted">nowych</span></th>
-                        <th scope="col">W izolacji</th>
                         <th scope="col"><span class="text-muted">nowych</span></th>
                     </tr>
                 </thead>
@@ -41,14 +35,8 @@
                             <th scope="row">{{ row.day.strftime('%d.%m.%Y') }}</th>
                             <td>{{ row.positive }}</td>
                             <td>{{ '%+d' % row.daily.positive }}</td>
-                            <td>{{ row.recovered }}</td>
-                            <td>{{ '%+d' % row.daily.recovered }}</td>
                             <td>{{ row.deaths }}</td>
                             <td>{{ '%+d' % row.daily.deaths }}</td>
-                            <td>{{ row.quarantined }}</td>
-                            <td>{{ '%+d' % row.daily.quarantined }}</td>
-                            <td>{{ row.isolated }}</td>
-                            <td>{{ '%+d' % row.daily.isolated }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -63,21 +51,19 @@
                 var data = new google.visualization.DataTable();
                 data.addColumn('date', 'Dzień');
                 data.addColumn('number', 'Zakażenia');
-                data.addColumn('number', 'Ozdrowienia');
                 data.addColumn('number', 'Zgony');
 
                 data.addRows({{chart_data}});
 
                 var options = {
-                    title: 'Warszawa: nowe zakażenia i ozdrowienia (średnia krocząca z 7 dni) oraz nowe zgony',
+                    title: 'Warszawa: nowe zakażenia (średnia krocząca z 7 dni) oraz nowe zgony',
                     width: '100%',
                     height: 800,
                     curveType: 'function',
                     theme: 'material',
                     series: {
                         0: { color: 'red' },
-                        1: { color: 'green', lineWidth: 1 },
-                        2: { color: 'black', lineWidth: 1 }
+                        1: { color: 'black', lineWidth: 1 }
                     },
                     vAxis: { minValue: 0, viewWindow: { min: 0 } },
                     annotations: {
