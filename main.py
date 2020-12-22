@@ -1,13 +1,14 @@
 import csv
 import re
 from datetime import date, timedelta
+from itertools import product
 from pathlib import Path
 
-from bs4 import BeautifulSoup
 import jinja2
 import pdfquery
 import pdfquery.cache
 import requests
+from bs4 import BeautifulSoup
 from dateutil.rrule import rrule, DAILY
 
 data_dir = Path("data")
@@ -48,17 +49,13 @@ def download_mz(session, day):
     if filename.exists():
         return True
 
-    if day.date() == date.today():
+    url = get_mz_archive_url(session, day)
+
+    if not url:
         mainpage_response = session.get('https://gov.pl/web/koronawirus/mapa-zarazen-koronawirusem-sars-cov-2-powiaty')
         mainpage_soup = BeautifulSoup(mainpage_response.content, features="lxml")
-        url = mainpage_soup.select_one('.file-download:not([v-if])')['href']
-    else:
-        archive_response = session.get('https://gov.pl/web/koronawirus/pliki-archiwalne-powiaty')
-        archive_soup = BeautifulSoup(archive_response.content, features="lxml")
-
-        href = next((element['href'] for element in archive_soup.select('#main-content a')
-                     if element.select_one('.extension').text.replace('\u200b', '').startswith(f'{day:%d_%m_%y}')), None)
-        url = f"https://gov.pl{href}"
+        if f'{day:%d.%m.%Y}' in mainpage_soup.select_one('.global-stats > p:first-child').text:
+            url = mainpage_soup.select_one('.file-download:not([v-if])')['href']
 
     if url:
         response = session.get(url)
@@ -69,6 +66,24 @@ def download_mz(session, day):
             return True
 
     print(f'could not download data for {day:%Y-%m-%d} from MZ')
+
+
+def get_mz_archive_url(session, day):
+    archive_response = session.get('https://gov.pl/web/koronawirus/pliki-archiwalne-powiaty')
+    archive_soup = BeautifulSoup(archive_response.content, features="lxml")
+
+    patterns = [
+        f'{day:%d_%m_%y}',
+        f'{day:%d_%m_%Y}',
+        f'{day:%Y%m%d}',
+        f'{day:%d%m%y}',
+    ]
+
+    href = next((element['href'] for element, pattern in product(archive_soup.select('#main-content a'), patterns)
+                 if element.select_one('.extension').text.replace('\u200b', '').startswith(pattern)), None)
+    url = f"https://gov.pl{href}"
+
+    return url if href else None
 
 
 def download_data(since=None):
@@ -125,7 +140,12 @@ def parse_psse(day):
 
 
 def parse_mz(day):
-    with open(data_dir / f"{day:%Y-%m-%d}.csv") as f:
+    filepath = data_dir / f"{day:%Y-%m-%d}.csv"
+
+    if day.date() == date.today() and not filepath.exists():
+        return None
+
+    with open(filepath) as f:
         reader = csv.DictReader(f, delimiter=';')
         data = next((row for row in reader if row['Powiat/Miasto'] == 'Warszawa'), None)
 
@@ -150,6 +170,9 @@ def parse_data(since, n):
             result = {'day': day, 'positive': 46889, 'deaths': 439}  # missing data, taken from previous day
         else:
             result = parse_mz(day)
+
+        if not result:
+            continue
 
         results.append(result)
 
