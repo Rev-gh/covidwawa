@@ -32,7 +32,9 @@
                 <tbody>
                     {% for row in table_data|reverse %}
                         <tr>
-                            <th scope="row">{{ row.day.strftime('%d.%m.%Y') }}</th>
+                            <th scope="row" class="day" data-timestamp="{{ (row.day.timestamp() * 1000) | int }}">
+                                {{ row.day.strftime('%d.%m.%Y') }}
+                            </th>
                             <td>{{ row.positive }}</td>
                             <td>{{ '%+d' % row.daily.positive }}</td>
                             <td>{{ row.deaths }}</td>
@@ -107,6 +109,21 @@
             }
 
             google.charts.setOnLoadCallback(draw);
+            
+            for (let element of document.querySelectorAll('.day')) {
+                let date = new Date(parseInt(element.dataset.timestamp));
+                
+                if (date.toDateString() === new Date().toDateString()) {
+                    element.innerText = 'dzisiaj';
+                }
+                
+                let yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                if (date.toDateString() === yesterday.toDateString()) {
+                    element.innerText = 'wczoraj';
+                }
+            }
          </script>
     </body>
 </html>

@@ -197,7 +197,7 @@ def parse_data(since, n):
 
         averages = {key: sum(result['daily'][key] for result in last_n) // n for key in ['positive']}
 
-        chart_data.append(f"[new Date({day.year}, {day.month - 1}, {day.day}), "
+        chart_data.append(f"[new Date({int(day.timestamp() * 1000)}), "
                           f"{averages['positive']}, {result['daily']['deaths']}]")
 
     with open('template.html') as f:
