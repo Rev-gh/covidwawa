@@ -147,13 +147,13 @@ def parse_mz(day):
 
     with open(filepath) as f:
         reader = csv.DictReader(f, delimiter=';')
-        data = next((row for row in reader if row['Powiat/Miasto'] == 'Warszawa'), None)
+        data = next((row for row in reader if row.get('Powiat/Miasto', row.get('powiat_miasto')) == 'Warszawa'), None)
 
         return {
             'day': day,
             'daily': {
-                'positive': int(data.get('Liczba', data.get('Liczba przypadków'))),
-                'deaths': int(data.get('Wszystkie przypadki śmiertelne', data.get('Zgony')))
+                'positive': int(data.get('Liczba', data.get('Liczba przypadków', data.get('liczba_przypadkow')))),
+                'deaths': int(data.get('Wszystkie przypadki śmiertelne', data.get('Zgony', data.get('zgony'))))
             }
         }
 
