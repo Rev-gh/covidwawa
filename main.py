@@ -1,8 +1,10 @@
 import csv
 import re
 from datetime import date, timedelta
+from io import BytesIO
 from itertools import product
 from pathlib import Path
+from zipfile import ZipFile
 
 import jinja2
 import pdfquery
@@ -86,6 +88,26 @@ def get_mz_archive_url(session, day):
     return url if href else None
 
 
+def download_arcgis_archive(session):
+    url = 'https://www.arcgis.com/sharing/rest/content/items/53fcfae2a0c44c3c8e1117f5c65da6f2/data'
+
+    with ZipFile(BytesIO(session.get(url).content)) as arcgis_archive:
+        for name in arcgis_archive.namelist():
+            if match := re.search(r'^(\d{4})(\d{2})(\d{2}).*\.csv$', name):
+                data = arcgis_archive.read(name).decode('windows-1250')
+                filename = data_dir / f'{match[1]}-{match[2]}-{match[3]}.csv'
+                filename.write_text(data)
+
+
+def download_arcgis(session, day):
+    filename = data_dir / f"{day:%Y-%m-%d}.csv"
+
+    if not filename.exists():
+        download_arcgis_archive(session)
+
+    return filename.exists()
+
+
 def download_data(since=None):
     with requests.Session() as session:
         for day in rrule(DAILY, dtstart=since or date(2020, 3, 16), until=date.today()):
@@ -96,7 +118,7 @@ def download_data(since=None):
             elif day.date() < date(2020, 11, 24):
                 pass  # there is no data
             else:
-                download_mz(session, day)
+                download_arcgis(session, day)
 
 
 def parse_psse(day):
@@ -139,7 +161,7 @@ def parse_psse(day):
     }
 
 
-def parse_mz(day):
+def parse_mz_and_arcgis(day):
     filepath = data_dir / f"{day:%Y-%m-%d}.csv"
 
     if day.date() == date.today() and not filepath.exists():
@@ -169,7 +191,7 @@ def parse_data(since, n):
         elif day.date() < date(2020, 11, 24):
             result = {'day': day, 'positive': 46889, 'deaths': 439}  # missing data, taken from previous day
         else:
-            result = parse_mz(day)
+            result = parse_mz_and_arcgis(day)
 
         if not result:
             continue
