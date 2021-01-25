@@ -47,27 +47,33 @@
 
         <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
         <script type="text/javascript">
+            var data = {{chart_data}}, viewport_x = {{viewport_x}}, viewport_y = {{viewport_y}};
             google.charts.load('current', {'packages': ['corechart'], 'language': 'pl'});
 
             function draw() {
-                var data = new google.visualization.DataTable();
-                data.addColumn('date', 'Dzień');
-                data.addColumn('number', 'Zakażenia');
-                data.addColumn('number', 'Zgony');
-
-                data.addRows({{chart_data}});
-
+                var dataTable = new google.visualization.DataTable();
+                dataTable.addColumn('date', 'Dzień');
+                dataTable.addColumn('number', 'Zakażenia');
+                dataTable.addColumn('number', 'Zgony');
+                
+                dataTable.addRows(data);
+                
                 var options = {
                     title: 'Warszawa: nowe zakażenia (średnia krocząca z 7 dni) oraz nowe zgony',
                     width: '100%',
                     height: 800,
                     curveType: 'function',
                     theme: 'material',
+                    explorer: {
+                        axis: 'horizontal',
+                        actions: ['dragToPan']
+                    },
                     series: {
                         0: { color: 'red' },
                         1: { color: 'black', lineWidth: 1 }
                     },
-                    vAxis: { minValue: 0, viewWindow: { min: 0 } },
+                    hAxis: { viewWindow: { min: viewport_x } },
+                    vAxis: { minValue: 0, viewWindow: { min: 0, max: viewport_y } },
                     annotations: {
                         textStyle: {
                             fontSize: 18,
@@ -79,11 +85,11 @@
                 };
 
                 var chart = new google.visualization.LineChart(document.getElementById('chart'));
-                chart.draw(data, options);
+                chart.draw(dataTable, options);
 
                 window.addEventListener('resize', debounce(function(){
                     var chart = new google.visualization.LineChart(document.getElementById('chart'));
-                    chart.draw(data, options);
+                    chart.draw(dataTable, options);
                 }));
             }
 

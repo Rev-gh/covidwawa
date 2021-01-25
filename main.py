@@ -212,21 +212,26 @@ def parse_data(since, n):
 
     results = results[1:]
 
+    viewport_y = 0
     chart_data = []
     for idx, result in enumerate(results[n - 1:], n):
         last_n = results[idx - n:idx]
         day = result['day']
 
         averages = {key: sum(result['daily'][key] for result in last_n) // n for key in ['positive']}
+        viewport_y = max(viewport_y, averages['positive'])
 
         chart_data.append(f"[new Date({int(day.timestamp() * 1000)}), "
                           f"{averages['positive']}, {result['daily']['deaths']}]")
 
+    viewport_x = chart_data[-120] + '[0]'
+    viewport_y += 100
+
     with open('template.html') as f:
         template = f.read()
 
-    html = jinja2.Template(template).render(chart_data=f'[{",".join(chart_data)}]',
-                                            table_data=results[-n:])
+    html = jinja2.Template(template).render(chart_data=f'[{",".join(chart_data)}]', table_data=results[-n:],
+                                            viewport_x=viewport_x, viewport_y=viewport_y)
 
     with open('data/index.html', 'w') as f:
         f.write(html)
@@ -234,5 +239,5 @@ def parse_data(since, n):
 
 if __name__ == '__main__':
     download_data()
-    parse_data(since=date.today() - timedelta(days=90), n=7)
+    parse_data(since=date.today() - timedelta(days=180), n=7)
 
