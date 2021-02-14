@@ -89,7 +89,7 @@ def get_mz_archive_url(session, day):
 
 
 def download_arcgis_archive(session):
-    url = 'https://www.arcgis.com/sharing/rest/content/items/53fcfae2a0c44c3c8e1117f5c65da6f2/data'
+    url = 'https://www.arcgis.com/sharing/rest/content/items/e16df1fa98c2452783ec10b0aea4b341/data'
 
     with ZipFile(BytesIO(session.get(url).content)) as arcgis_archive:
         for name in arcgis_archive.namelist():
