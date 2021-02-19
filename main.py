@@ -94,7 +94,7 @@ def download_arcgis_archive(session):
     with ZipFile(BytesIO(session.get(url).content)) as arcgis_archive:
         for name in arcgis_archive.namelist():
             if match := re.search(r'^(\d{4})(\d{2})(\d{2}).*\.csv$', name):
-                data = arcgis_archive.read(name).decode('windows-1250')
+                data = arcgis_archive.read(name).decode('windows-1250', errors='ignore')
                 filename = data_dir / f'{match[1]}-{match[2]}-{match[3]}.csv'
                 filename.write_text(data)
 
@@ -174,8 +174,8 @@ def parse_mz_and_arcgis(day):
         return {
             'day': day,
             'daily': {
-                'positive': int(data.get('Liczba', data.get('Liczba przypadków', data.get('liczba_przypadkow')))),
-                'deaths': int(data.get('Wszystkie przypadki śmiertelne', data.get('Zgony', data.get('zgony'))))
+                'positive': int(float(data.get('Liczba', data.get('Liczba przypadków', data.get('liczba_przypadkow'))))),
+                'deaths': int(float(data.get('Wszystkie przypadki śmiertelne', data.get('Zgony', data.get('zgony')))))
             }
         }
 
