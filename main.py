@@ -174,8 +174,9 @@ def parse_mz_and_arcgis(day):
         return {
             'day': day,
             'daily': {
-                'positive': int(float(data.get('Liczba', data.get('Liczba przypadków', data.get('liczba_przypadkow'))))),
-                'deaths': int(float(data.get('Wszystkie przypadki śmiertelne', data.get('Zgony', data.get('zgony')))))
+                'positive': int(float(data['liczba_przypadkow'])),
+                'deaths': int(float(data['zgony'])),
+                'tests': int(float(data['liczba_wykonanych_testow'])) if 'liczba_wykonanych_testow' in data else None
             }
         }
 
@@ -186,10 +187,11 @@ def parse_data(since, n):
     for idx, day in enumerate(rrule(DAILY, dtstart=since or date(2020, 3, 16), until=date.today())):
         if day.date() < date(2020, 3, 16):
             raise Exception("no data available before 2020-03-16")
-        elif day.date() < date(2020, 11, 22):
+        elif day.date() < date(2020, 11, 23):
             result = parse_psse(day)
-        elif day.date() < date(2020, 11, 24):
-            result = {'day': day, 'positive': 46889, 'deaths': 439}  # missing data, taken from previous day
+        elif day.date() == date(2020, 11, 23):
+            # missing data, average between previous and next day
+            result = {'day': day, 'daily': {'positive': 617, 'deaths': 7}}
         else:
             result = parse_mz_and_arcgis(day)
 
@@ -203,10 +205,13 @@ def parse_data(since, n):
                 if parameter not in result:
                     result[parameter] = results[idx - 1][parameter] + result['daily'][parameter]
 
+            daily_positive = result['positive'] - results[idx - 1]['positive']
+
             results[idx].update({
                 'daily': {
-                    'positive': result['positive'] - results[idx - 1]['positive'],
-                    'deaths': result['deaths'] - results[idx - 1]['deaths']
+                    'positive': daily_positive,
+                    'deaths': result['deaths'] - results[idx - 1]['deaths'],
+                    'tests': result['daily'].get('tests')
                 }
             })
 
@@ -219,19 +224,22 @@ def parse_data(since, n):
         day = result['day']
 
         averages = {key: sum(result['daily'][key] for result in last_n) // n for key in ['positive']}
-        viewport_y = max(viewport_y, averages['positive'])
+        viewport_y = max(viewport_y, result['daily']['positive'])
 
-        chart_data.append(f"[new Date({int(day.timestamp() * 1000)}), "
-                          f"{averages['positive']}, {result['daily']['deaths']}]")
+        chart_data.append({
+            'timestamp': int(day.timestamp() * 1000),
+            'positive_average': averages['positive'],
+            'positive': result['daily']['positive'],
+            'deaths': result['daily']['deaths'],
+            'tests': result['daily']['tests']
+        })
 
-    viewport_x = chart_data[-120] + '[0]'
     viewport_y += 100
 
     with open('template.html') as f:
         template = f.read()
 
-    html = jinja2.Template(template).render(chart_data=f'[{",".join(chart_data)}]', table_data=results[-n:],
-                                            viewport_x=viewport_x, viewport_y=viewport_y)
+    html = jinja2.Template(template).render(chart_data=chart_data, table_data=results[-n:], viewport_y=viewport_y)
 
     with open('data/index.html', 'w') as f:
         f.write(html)
@@ -239,5 +247,5 @@ def parse_data(since, n):
 
 if __name__ == '__main__':
     download_data()
-    parse_data(since=date.today() - timedelta(days=180), n=7)
+    parse_data(since=date.today() - timedelta(days=180), n=14)
 

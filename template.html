@@ -6,74 +6,125 @@
         <title>CovidWawa</title>
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha2/css/bootstrap.min.css" integrity="sha384-DhY6onE6f3zzKbjUPRc2hOzGAdEf4/Dz+WJwBvEYL/lkkIsI3ihufq9hk9K4lVoK" crossorigin="anonymous">
         <style>
-            #table {
+            .table {
                 width: auto;
+                float: left;
             }
             
-            #table tbody tr td:nth-child(2n) {
+            .table:first-child {
+                margin-right: 40px;
+            }
+            
+            .table tbody tr td:nth-child(2n) {
                 border-left: 1px solid;
                 border-left-color: inherit;
+            }
+            
+            div.google-visualization-tooltip {
+                padding: 10px;
+                font-size: 100%;
+                white-space: nowrap;
+            }
+            
+            div.google-visualization-tooltip p {
+                margin: 0;
             }
         </style>
     </head>
     <body>
         <div id="chart"></div>
         <div class="container">
-            <table id="table" class="table table-hover">
-                <thead>
-                    <tr>
-                        <th scope="col">Dzień</th>
-                        <th scope="col">Zakażonych</th>
-                        <th scope="col"><span class="text-muted">nowych</span></th>
-                        <th scope="col">Zgonów</th>
-                        <th scope="col"><span class="text-muted">nowych</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in table_data|reverse %}
+            {% for table in [table_data[7:14], table_data[0:7]] %}
+                <table class="table table-hover">
+                    <thead>
                         <tr>
-                            <th scope="row" class="day" data-timestamp="{{ (row.day.timestamp() * 1000) | int }}">
-                                {{ row.day.strftime('%d.%m.%Y') }}
-                            </th>
-                            <td>{{ row.positive }}</td>
-                            <td>{{ '%+d' % row.daily.positive }}</td>
-                            <td>{{ row.deaths }}</td>
-                            <td>{{ '%+d' % row.daily.deaths }}</td>
+                            <th scope="col">Dzień</th>
+                            <th scope="col">Zakażonych</th>
+                            <th scope="col"><span class="text-muted">nowych</span></th>
+                            <th scope="col">Zgonów</th>
+                            <th scope="col"><span class="text-muted">nowych</span></th>
+                            <th scope="col">Testów</th>
+                            <th scope="col"><span class="text-muted">pozytywnych</span></th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for row in table|reverse %}
+                            <tr>
+                                <th scope="row" class="day" data-timestamp="{{ (row.day.timestamp() * 1000) | int }}">
+                                    {{ row.day.strftime('%d.%m.%Y') }}
+                                </th>
+                                <td>{{ row.positive }}</td>
+                                <td>{{ '%+d' % row.daily.positive }}</td>
+                                <td>{{ row.deaths }}</td>
+                                <td>{{ '%+d' % row.daily.deaths }}</td>
+                                <td>{{ row.daily.tests }}</td>
+                                <td>{{ "{:,.2f}".format(row.daily.positive / row.daily.tests * 100) }}%</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endfor %}
         </div>
 
         <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
         <script type="text/javascript">
-            var data = {{chart_data}}, viewport_x = {{viewport_x}}, viewport_y = {{viewport_y}};
+            var dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            var data = [
+                {% for row in chart_data %}
+                    [
+                        new Date({{ row.timestamp }}),
+                        `
+                            <p><strong>${new Date({{ row.timestamp }}).toLocaleDateString('pl-PL', dateOptions)}</strong></p>
+                            <p>Zakażenia: <strong>{{ row.positive }}</strong></p>
+                            <p>Zgony: <strong>{{ row.deaths }}</strong></p>
+                            {% if row.tests %}
+                                <p>Testy: <strong>{{ row.tests }}</strong> (<strong>{{ "{:,.2f}".format(row.positive / row.tests * 100) }}%</strong> pozytywnych)</p>
+                            {% endif %}
+                        `,
+                        {{ row.positive_average }},
+                        {{ row.positive }},
+                        'opacity: 0.2'
+                    ],
+                {% endfor %}
+            ];
+            
+            var viewport_x = data[data.length - 150][0], viewport_y = {{ viewport_y }};
             google.charts.load('current', {'packages': ['corechart'], 'language': 'pl'});
 
             function draw() {
                 var dataTable = new google.visualization.DataTable();
                 dataTable.addColumn('date', 'Dzień');
+                dataTable.addColumn({ 'type': 'string', 'role': 'tooltip', 'p': { 'html': true } });
+                dataTable.addColumn('number', '7-dniowa średnia krocząca zakażeń');
                 dataTable.addColumn('number', 'Zakażenia');
-                dataTable.addColumn('number', 'Zgony');
+                dataTable.addColumn({ 'type': 'string', 'role': 'style' });
                 
                 dataTable.addRows(data);
                 
                 var options = {
-                    title: 'Warszawa: nowe zakażenia (średnia krocząca z 7 dni) oraz nowe zgony',
+                    title: 'Warszawa: nowe zakażenia',
                     width: '100%',
                     height: 800,
                     curveType: 'function',
                     theme: 'material',
+                    aggregationTarget: 'category',
+                    tooltip: { trigger: 'hover', isHtml: true },
+                    focusTarget: 'category',
+                    legend: 'none',
+                    chartArea: { 'width': '80%', 'height': '80%' },
                     explorer: {
                         axis: 'horizontal',
                         actions: ['dragToPan']
                     },
+                    axisTitlesPosition: 'in',
                     series: {
-                        0: { color: 'red' },
-                        1: { color: 'black', lineWidth: 1 }
+                        0: { axis: 'cases', color: 'red' },
+                        1: { axis: 'cases', color: 'red' }
+                    },
+                    vAxes: {
+                        0: { minValue: 0, viewWindow: { min: 0, max: viewport_y } }
                     },
                     hAxis: { viewWindow: { min: viewport_x } },
-                    vAxis: { minValue: 0, viewWindow: { min: 0, max: viewport_y } },
                     annotations: {
                         textStyle: {
                             fontSize: 18,
