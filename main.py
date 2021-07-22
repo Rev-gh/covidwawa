@@ -215,7 +215,7 @@ def parse_data(since, n):
                 }
             })
 
-    results = results[1:]
+    results = results[1:][-240:]
 
     viewport_y = 0
     chart_data = []
@@ -247,5 +247,5 @@ def parse_data(since, n):
 
 if __name__ == '__main__':
     download_data()
-    parse_data(since=date.today() - timedelta(days=240), n=14)
+    parse_data(since=date(2020, 7, 1), n=14)
 
