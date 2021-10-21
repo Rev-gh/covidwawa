@@ -193,7 +193,7 @@ def parse_data(since, n):
             # missing data, average between previous and next day
             result = {'day': day, 'daily': {'positive': 617, 'deaths': 7}}
         elif day.date() == date(2021, 10, 20):
-            result = {'day': day, 'daily': {'positive': 386, 'deaths': 0, 'tests': 764}}
+            result = {'day': day, 'daily': {'positive': 386, 'deaths': 0, 'tests': 3025}}
         else:
             result = parse_mz_and_arcgis(day)
 
