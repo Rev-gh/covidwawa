@@ -217,7 +217,7 @@ def parse_data(since, n):
                 }
             })
 
-    results = results[1:][-240:]
+    results = results[1:][-365:]
 
     viewport_y = 0
     chart_data = []
