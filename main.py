@@ -169,12 +169,12 @@ def parse_mz_and_arcgis(day):
 
     with open(filepath) as f:
         reader = csv.DictReader(f, delimiter=';')
-        data = next((row for row in reader if row.get('Powiat/Miasto', row.get('powiat_miasto')) == 'Warszawa'), None)
+        data = next((row for row in reader if row.get('Powiat/Miasto', row.get('powiat_miasto', row.get('powiat'))) == 'Warszawa'), None)
 
         return {
             'day': day,
             'daily': {
-                'positive': int(float(data['liczba_przypadkow'])),
+                'positive': int(float(data.get('liczba_przypadkow', data.get('liczba_wszystkich_zakazen')))),
                 'deaths': int(float(data['zgony'])),
                 'tests': int(float(data['liczba_wykonanych_testow'])) if 'liczba_wykonanych_testow' in data else None
             }
