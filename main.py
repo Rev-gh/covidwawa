@@ -99,11 +99,20 @@ def download_arcgis_archive(session):
                 filename.write_text(data)
 
 
+def download_arcgis_current(session, filename):
+    url = 'https://www.arcgis.com/sharing/rest/content/items/6ff45d6b5b224632a672e764e04e8394/data'
+
+    filename.write_text(session.get(url).content.decode('windows-1250'))
+
+
 def download_arcgis(session, day):
     filename = data_dir / f"{day:%Y-%m-%d}.csv"
 
     if not filename.exists():
-        download_arcgis_archive(session)
+        if day.date() == date.today():
+            download_arcgis_current(session, filename)
+        else:
+            download_arcgis_archive(session)
 
     return filename.exists()
 
@@ -248,6 +257,7 @@ def parse_data(since, n):
 
 
 if __name__ == '__main__':
-    download_data()
-    parse_data(since=date(2020, 7, 1), n=14)
+    since = date(2022, 7, 18)
 
+    download_data(since)
+    parse_data(since, n=14)
